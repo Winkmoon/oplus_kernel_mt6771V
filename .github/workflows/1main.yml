@@ -1,4 +1,4 @@
-name: 编译mt6771-安卓11内核
+name: 编译mt6771-OPPO安卓11内核
 
 on:
   workflow_dispatch:
@@ -43,11 +43,14 @@ jobs:
     - name: 下载内核源码
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace
-        git clone https://github.com/Winkmoon/oplus_kernel_mt6771V.git -b lineage-18.1-rmui xinran
+        git clone --depth=1 https://github.com/Winkmoon/oplus_kernel_mt6771V.git xinran -b lineage-18.1-rmui
         cd xinran
         rm -rf KernelSU
         sed -i "\$s|echo \"\\\$res\"|echo \"-ShirokoNeko_Bai-Dev\"|" ./scripts/setlocalversion
 
+    - name: 集成sukisu
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace/xinran
         curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
         patch -p1 < ksu_hooks_4.14.patch
         cd ./KernelSU
@@ -83,6 +86,7 @@ jobs:
 
  
     - name: 开始编译内核
+      continue-on-error: true
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/xinran
         export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/bin:$GITHUB_WORKSPACE/kernel_workspace/gcc64/bin:$GITHUB_WORKSPACE/kernel_workspace/gcc32/bin:$PATH
