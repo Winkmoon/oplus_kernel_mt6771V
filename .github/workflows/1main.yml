@@ -13,7 +13,9 @@ jobs:
     - name: 构建编译内核环境
       run: |
         sudo apt-get update
-        sudo -E apt-get -y -qq install git make bc bison ccache openssl dos2unix zip kmod cpio flex libelf-dev curl libssl-dev libtfm-dev wget device-tree-compiler ca-certificates python3 binutils binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi
+        sudo -E apt-get -y -qq install git make bc bison ccache openssl dos2unix zip kmod cpio flex libelf-dev curl libssl-dev libtfm-dev wget device-tree-compiler ca-certificates python2 binutils binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi
+        sudo update-alternatives --install /usr/bin/python python /usr/bin/python2 1
+        sudo update-alternatives --set python /usr/bin/python2
         mkdir -p $GITHUB_WORKSPACE/kernel_workspace
 
     - name: 下载 Gcc编译器
@@ -61,7 +63,6 @@ jobs:
         echo "CONFIG_MODULE_SIG=n" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_MODULE_SIG_FORCE=n" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_MODULE_SIG_SHA512=n" >> ./arch/arm64/configs/oppo6771_defconfig
-        #sed -i 's/check_defconfig//' ./build.config.gki
         export KBUILD_BUILD_USER=Ran love Bai
         export KBUILD_BUILD_HOST=Ran_yong_yuan_ai_bai
 
@@ -76,8 +77,6 @@ jobs:
       run: |
         cd $GITHUB_WORKSPACE/kernel_workspace/xinran
         export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/bin:$GITHUB_WORKSPACE/kernel_workspace/gcc64/bin:$GITHUB_WORKSPACE/kernel_workspace/gcc32/bin:$PATH
-        export KBUILD_BUILD_HOST=ShirokoNeko酷安@欣然酱_official
-        export KBUILD_BUILD_USER=ShirokoNeko-SukiSU
         make -s -j$(nproc --all) O=out ARCH=arm64 oppo6771_defconfig
         make -j$(nproc --all) CC="ccache clang" O=out ARCH=arm64 CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- LD=ld.lld || true
 
