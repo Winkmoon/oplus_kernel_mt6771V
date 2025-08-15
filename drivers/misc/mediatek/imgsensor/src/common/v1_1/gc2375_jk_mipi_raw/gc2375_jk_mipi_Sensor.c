@@ -507,54 +507,50 @@ static void set_shutter(kal_uint16 shutter)
 }        /*        set_shutter */
 
 
-static void set_shutter_frame_length(
-        kal_uint16 shutter, kal_uint16 frame_length)
+static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
 {
+    unsigned long flags;
+    kal_int32 dummy_line = 0;
 
-       unsigned long flags;
-        //kal_uint16 realtime_fps = 0;
-       kal_int32 dummy_line = 0;
+    spin_lock_irqsave(&imgsensor_drv_lock, flags);
+    imgsensor.shutter = shutter;
+    spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
 
-       spin_lock_irqsave(&imgsensor_drv_lock, flags);
-       imgsensor.shutter = shutter;
-       spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
-       //LOG_DBG("shutter =%d, frame_time =%d\n", shutter, frame_time);
-       /* 0x3500, 0x3501, 0x3502 will increase VBLANK
-       * to get exposure larger than frame exposure
-       */
-       /* AE doesn't update sensor gain at capture mode,
-       * thus extra exposure lines must be updated here.
-       */
-       /* OV Recommend Solution */
-       /* if shutter bigger than frame_length,
-       * should extend frame length first
-       */
-       spin_lock(&imgsensor_drv_lock);
-       /*Change frame time */
-       if (frame_length > 1)
-          dummy_line = frame_length - imgsensor.frame_length;
-       imgsensor.frame_length = imgsensor.frame_length + dummy_line;
-       /*  */
-       if (shutter > imgsensor.frame_length - imgsensor_info.margin)
-          imgsensor.frame_length = shutter + imgsensor_info.margin;
+    spin_lock(&imgsensor_drv_lock);
+    
+    if (frame_length > 1)
+        dummy_line = frame_length - imgsensor.frame_length;
+    
+    imgsensor.frame_length += dummy_line;
+    
+    if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+        imgsensor.frame_length = shutter + imgsensor_info.margin;
+    
     if (imgsensor.frame_length > imgsensor_info.max_frame_length)
-       imgsensor.frame_length = imgsensor_info.max_frame_length;
-       spin_unlock(&imgsensor_drv_lock);
-       shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-       shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+        imgsensor.frame_length = imgsensor_info.max_frame_length;
+    
+    spin_unlock(&imgsensor_drv_lock);
 
-       set_dummy();
-       // Update Shutter
-       if (shutter == (imgsensor.frame_length-1))
-          shutter += 1;
-    if(shutter > 16383) shutter = 16383;
-    if(shutter < 1) shutter = 1;
-    //Update Shutter
+    shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+    shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? 
+              (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+
+    set_dummy();
+
+    if (shutter == (imgsensor.frame_length - 1))
+        shutter += 1;
+
+    if (shutter > 16383) 
+        shutter = 16383;
+    if (shutter < 1) 
+        shutter = 1;
+
     write_cmos_sensor(0xfe, 0x00);
-    write_cmos_sensor(0x03, (shutter>>8) & 0x3F);
+    write_cmos_sensor(0x03, (shutter >> 8) & 0x3F);
     write_cmos_sensor(0x04, shutter & 0xFF);
-    LOG_DBG("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
-}        /*        set_shutter */
+
+    LOG_DBG("Exit! shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
+}
 
 
 /*
