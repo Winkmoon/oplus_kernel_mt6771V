@@ -1,0 +1,117 @@
+name: 编译mt6771-安卓11内核
+
+on:
+  workflow_dispatch:
+
+    inputs:
+      KERNEL_BRANCH:
+        description: 'KERNEL_BRANCH'
+        required: true
+        default: 'A124.19'
+        type: choice
+        options:
+        - A124.19
+      KERNEL_NAME:
+        description: 'KERNEL_NAME'
+        required: true
+        default: 'kerne-l4.19'
+        type: choice
+        options:
+        - kerne-l4.14
+        - kerne-l4.19
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+
+
+    - name: 构建编译内核环境
+      run: |
+        sudo apt-get update
+        sudo -E apt-get -y -qq install git make bc bison ccache openssl dos2unix zip kmod cpio flex libelf-dev curl libssl-dev libtfm-dev wget device-tree-compiler ca-certificates python3 binutils binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi
+        mkdir -p $GITHUB_WORKSPACE/kernel_workspace
+
+
+
+    - name: 下载 Gcc编译器
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        
+        mkdir gcc64
+        wget -O gcc-aarch64.tar.gz https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/tags/android-12.1.0_r27.tar.gz
+        tar -C gcc64/ -zxvf gcc-aarch64.tar.gz
+    
+        mkdir gcc32
+        wget -O gcc-arm.tar.gz https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/refs/tags/android-12.1.0_r27.tar.gz
+        tar -C gcc32/ -zxvf gcc-arm.tar.gz
+    
+    - name: 下载Clang编译器
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        mkdir clang-aosp
+        git clone -q --depth=1 https://github.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-6443078 -b 10.0 clang-aosp
+    
+    
+    - name: 下载内核源码
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace
+        git clone https://github.com/Winkmoon/oplus_kernel_mt6771V.git -b lineage-18.1-rmui xinran
+        cd xinran
+        rm -rf KernelSU
+        sed -i "\$s|echo \"\\\$res\"|echo \"-ShirokoNeko_Bai-Dev\"|" ./scripts/setlocalversion
+
+        curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
+        patch -p1 < ksu_hooks_4.14.patch
+        cd ./KernelSU
+        KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10700)
+        export KSU_VERSION=$KSU_VERSION
+        sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
+
+
+        cd ~/xinran
+        echo "CONFIG_KALLSYMS=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_KALLSYMS_ALL=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_KPROBES=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_HAVE_KPROBES=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_KSU=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_KPM=y" >> ./arch/arm64/configs/oppo6771_defconfig
+        
+        echo "CONFIG_MODULE_SIG=n" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_MODULE_SIG_FORCE=n" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_MODULE_SIG_SHA512=n" >> ./arch/arm64/configs/oppo6771_defconfig
+        
+        sed -i 's/check_defconfig//' ./build.config.gki
+
+        export KBUILD_BUILD_USER=Ran love Bai
+        export KBUILD_BUILD_HOST=Ran_yong_yuan_ai_bai
+        
+   
+    - name: 设置ccache缓存
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: build-kernel-mido-kernel
+        max-size: 10G
+
+ 
+    - name: 开始编译内核
+      run: |
+        cd $GITHUB_WORKSPACE/kernel_workspace/xinran
+        export PATH=$GITHUB_WORKSPACE/kernel_workspace/clang-aosp/bin:$GITHUB_WORKSPACE/kernel_workspace/gcc64/bin:$GITHUB_WORKSPACE/kernel_workspace/gcc32/bin:$PATH
+        export KBUILD_BUILD_HOST=ShirokoNeko酷安@欣然酱_official
+        export KBUILD_BUILD_USER=ShirokoNeko-SukiSU
+        make -s -j$(nproc --all) O=out ARCH=arm64 oppo6771_defconfig
+        make -j$(nproc --all) CC="ccache clang" O=out ARCH=arm64 CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- LD=ld.lld
+                
+
+        
+
+    - name: 上传编译内核
+      uses: actions/upload-artifact@v4
+      with:
+        name: mtk6771-Image
+        path: kernel_workspace/${{ github.event.inputs.KERNEL_NAME }}/out/arch/arm64/boot/Image
