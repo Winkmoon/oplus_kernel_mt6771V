@@ -61,7 +61,7 @@ jobs:
         echo "CONFIG_MODULE_SIG=n" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_MODULE_SIG_FORCE=n" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_MODULE_SIG_SHA512=n" >> ./arch/arm64/configs/oppo6771_defconfig
-        sed -i 's/check_defconfig//' ./build.config.gki
+        #sed -i 's/check_defconfig//' ./build.config.gki
         export KBUILD_BUILD_USER=Ran love Bai
         export KBUILD_BUILD_HOST=Ran_yong_yuan_ai_bai
 
