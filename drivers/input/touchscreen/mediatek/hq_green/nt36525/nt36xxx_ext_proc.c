@@ -649,7 +649,7 @@ static int32_t c_data_limit_show(struct seq_file *m, void *v)
 
 	/* Parsing criteria from dts */
 	if(of_property_read_bool(np, "novatek,mp-support-dt")) {
-		snprintf(mpcriteria, PAGE_SIZE, "novatek-mp-criteria-%04X", ts->nvt_pid);
+		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
 		if (nvt_mp_parse_dt(np, mpcriteria, m)) {
 			mutex_unlock(&ts->lock);
 			NVT_ERR("mp parse device tree failed!\n");
@@ -1059,7 +1059,7 @@ struct oppo_register_info {
 static ssize_t oppo_register_info_write(struct file *filp, const char __user *buf,
 		size_t count, loff_t *ppos)
 {
-	uint8_t tmp[5] = {0};
+	char tmp[6] = {0};
 	char cmd[128] = {0};
 
 	/* Error handler */
@@ -1074,7 +1074,7 @@ static ssize_t oppo_register_info_write(struct file *filp, const char __user *bu
 	}
 
 	/* parsing address (Novatek address length: 5 bit) */
-	sprintf(tmp, "%c%c%c%c%c", cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
+	snprintf(tmp, sizeof(tmp), "%c%c%c%c%c", cmd[0], cmd[1], cmd[2], cmd[3], cmd[4]);
 
 	if (kstrtouint(tmp, 16, &oppo_reg.addr)) {
 		NVT_ERR("kstrtouint error\n");
@@ -1084,7 +1084,7 @@ static ssize_t oppo_register_info_write(struct file *filp, const char __user *bu
 	NVT_LOG("address: 0x%05X\n", oppo_reg.addr);
 
 	/* parsing length */
-	sprintf(tmp, "%c", cmd[6]);
+	snprintf(tmp, sizeof(tmp), "%c", cmd[6]);
 	if (kstrtouint(tmp, 10, &oppo_reg.len)) {
 		NVT_ERR("kstrtouint error\n");
 		return -EINVAL;
