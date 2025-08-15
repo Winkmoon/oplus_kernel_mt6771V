@@ -640,35 +640,35 @@ extern int32_t nvt_mp_parse_lpwg_dt(struct device_node *root, const char *node_c
 extern void nvt_print_criteria(struct seq_file *m);
 static int32_t c_data_limit_show(struct seq_file *m, void *v)
 {
-	struct device_node *np = ts->client->dev.of_node;
-	unsigned char mpcriteria[32] = {0}; //novatek-mp-criteria-default
+    struct device_node *np = ts->client->dev.of_node;
+    unsigned char mpcriteria[32] = {0}; //novatek-mp-criteria-default
 
-	if (mutex_lock_interruptible(&ts->lock)) {
-		return -ERESTARTSYS;
-	}
+    if (mutex_lock_interruptible(&ts->lock)) {
+        return -ERESTARTSYS;
+    }
 
-	/* Parsing criteria from dts */
-	if(of_property_read_bool(np, "novatek,mp-support-dt")) {
-		snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid);
-		if (nvt_mp_parse_dt(np, mpcriteria, m)) {
-			mutex_unlock(&ts->lock);
-			NVT_ERR("mp parse device tree failed!\n");
-			return -EINVAL;
-		}
+    /* Parsing criteria from dts */
+    if(of_property_read_bool(np, "novatek,mp-support-dt")) {
+        snprintf(mpcriteria, sizeof(mpcriteria), "novatek-mp-criteria-%04X", ts->nvt_pid & 0xFFFF); // Ensure 16-bit PID
+        if (nvt_mp_parse_dt(np, mpcriteria, m)) {
+            mutex_unlock(&ts->lock);
+            NVT_ERR("mp parse device tree failed!\n");
+            return -EINVAL;
+        }
 
-		if (nvt_mp_parse_lpwg_dt(np, mpcriteria, m)) {
-			mutex_unlock(&ts->lock);
-			NVT_ERR("mp parse device tree failed!\n");
-			return -EINVAL;
-		}
-	} else {
-		NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
-		//---Print Test Criteria---
-		nvt_print_criteria(m);
-	}
+        if (nvt_mp_parse_lpwg_dt(np, mpcriteria, m)) {
+            mutex_unlock(&ts->lock);
+            NVT_ERR("mp parse device tree failed!\n");
+            return -EINVAL;
+        }
+    } else {
+        NVT_LOG("Not found novatek,mp-support-dt, use default setting\n");
+        //---Print Test Criteria---
+        nvt_print_criteria(m);
+    }
 
-	mutex_unlock(&ts->lock);
-	return 0;
+    mutex_unlock(&ts->lock);
+    return 0;
 }
 
 const struct seq_operations oppo_data_limit_seq_ops = {
