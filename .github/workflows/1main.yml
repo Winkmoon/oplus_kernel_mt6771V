@@ -61,17 +61,10 @@ jobs:
         export KSU_VERSION=$KSU_VERSION
         sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=$KSU_VERSION/" kernel/Makefile
         cd $GITHUB_WORKSPACE/kernel_workspace/xinran
-        echo "CONFIG_KALLSYMS=y" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_KALLSYMS_ALL=y" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_KSU_TRACEPOINT_HOOK=y" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_KPROBES=y" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_HAVE_KPROBES=y" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_KSU=y" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_KPM=y" >> ./arch/arm64/configs/oppo6771_defconfig
         echo "CONFIG_MODULE_SIG=n" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_MODULE_SIG_FORCE=n" >> ./arch/arm64/configs/oppo6771_defconfig
-        echo "CONFIG_MODULE_SIG_SHA512=n" >> ./arch/arm64/configs/oppo6771_defconfig
+        echo "CONFIG_MODULE_SIG_ALL=n" >> ./arch/arm64/configs/oppo6771_defconfig
         export KBUILD_BUILD_USER=Ran love Bai
         export KBUILD_BUILD_HOST=Ran_yong_yuan_ai_bai
 
